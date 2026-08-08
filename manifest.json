@@ -4,7 +4,7 @@
 	"version": "1.0.1",
 	"minAppVersion": "1.4.0",
 	"description": "Component host and micro-application launcher for modular workspace widgets and tools.",
-	"author": "Beto Group",
+	"author": "beto.group",
 	"authorUrl": "https://github.com/beto-group",
 	"isDesktopOnly": false
 }
