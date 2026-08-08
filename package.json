@@ -1,7 +1,7 @@
 {
   "name": "grex-nexus",
   "version": "1.0.1",
-  "description": "Component host and micro-app launcher engine",
+  "description": "Component host and micro-application launcher for modular workspace widgets and tools",
   "main": "main.js",
   "scripts": {
     "build": "node esbuild.config.mjs production",
