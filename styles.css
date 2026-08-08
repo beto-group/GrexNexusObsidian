@@ -28,3 +28,45 @@
   border: 1px solid var(--background-modifier-border);
   margin-bottom: 8px;
 }
+
+.grex-log-container {
+  background: #0d1117;
+  color: #e5e5e5;
+  font-family: monospace;
+  font-size: 12px;
+  padding: 12px;
+  height: 300px;
+  overflow-y: auto;
+  border-radius: 6px;
+  margin-top: 10px;
+  word-break: break-all;
+}
+
+.grex-log-line {
+  margin: 2px 0;
+}
+
+.grex-text-muted {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.grex-log-blue { color: #3b82f6; }
+.grex-log-yellow { color: #e3b341; }
+.grex-log-green { color: #56d364; }
+.grex-log-red { color: #f85149; }
+
+.grex-banner-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.grex-component-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
