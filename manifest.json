@@ -1,7 +1,7 @@
 {
 	"id": "grex-nexus",
 	"name": "GREX Nexus",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"minAppVersion": "1.4.0",
 	"description": "Component host and micro-app launcher engine. Dynamically renders modular ESM/WASM bundles inside native workspace tabs.",
 	"author": "Beto Group",

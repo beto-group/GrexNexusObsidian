@@ -1,6 +1,6 @@
 {
   "name": "grex-nexus",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Component host and micro-app launcher engine",
   "main": "main.js",
   "scripts": {
