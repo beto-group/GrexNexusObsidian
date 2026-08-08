@@ -13,10 +13,13 @@ import {
     Setting,
     ButtonComponent,
     setIcon,
-    requestUrl,
-    setCssStyles
+    requestUrl
 } from 'obsidian';
 import * as preact from 'preact';
+
+function applyStyles(el: HTMLElement, styles: Partial<CSSStyleDeclaration>): void {
+    Object.assign(el.style, styles);
+}
 
 const VIEW_TYPE_GREX = "grex-component-view";
 const VIEW_TYPE_GREX_DASHBOARD = "grex-dashboard-view";
@@ -156,14 +159,14 @@ class ComponentSelectorModal extends FuzzySuggestModal<ComponentData> {
         el.empty();
         const comp = match.item;
         const container = el.createDiv();
-        setCssStyles(container, { display: 'flex', flexDirection: 'column', gap: '4px' });
+        applyStyles(container, { display: 'flex', flexDirection: 'column', gap: '4px' });
         
         const titleEl = container.createDiv();
-        setCssStyles(titleEl, { fontWeight: '500' });
+        applyStyles(titleEl, { fontWeight: '500' });
         super.renderSuggestion(match, titleEl);
         
         const pathEl = container.createDiv({ text: comp.folder.path });
-        setCssStyles(pathEl, { fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-monospace)', opacity: '0.7' });
+        applyStyles(pathEl, { fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-monospace)', opacity: '0.7' });
     }
 
     onChooseItem(comp: ComponentData): void {
@@ -376,7 +379,7 @@ class GrexComponentView extends ItemView {
 
         if (!this.componentData) {
             const emptyEl = container.createDiv({ text: "No component loaded." });
-            setCssStyles(emptyEl, { padding: "20px", color: "var(--text-muted)" });
+            applyStyles(emptyEl, { padding: "20px", color: "var(--text-muted)" });
             return;
         }
 
@@ -389,7 +392,7 @@ class GrexComponentView extends ItemView {
         } catch (err: unknown) {
             container.empty();
             const errBox = container.createDiv();
-            setCssStyles(errBox, { padding: "20px", color: "var(--text-error)" });
+            applyStyles(errBox, { padding: "20px", color: "var(--text-error)" });
             errBox.createEl("h3", { text: "Component Load Error" });
             errBox.createEl("pre", { text: String(err) });
         }
@@ -430,20 +433,20 @@ class GrexDashboardView extends ItemView {
         container.addClass("grex-nexus-view-container");
 
         const header = container.createDiv();
-        setCssStyles(header, { padding: "16px", borderBottom: "1px solid var(--background-modifier-border)" });
+        applyStyles(header, { padding: "16px", borderBottom: "1px solid var(--background-modifier-border)" });
         header.createEl("h2", { text: "GREX Dashboard" });
         const sub = header.createEl("p", { text: "Manage and launch active vault micro-applications." });
         sub.addClass("grex-text-muted");
 
         const grid = container.createDiv();
-        setCssStyles(grid, { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "16px", padding: "16px" });
+        applyStyles(grid, { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "16px", padding: "16px" });
 
         this.plugin.manifestCache.forEach(comp => {
             const card = grid.createDiv();
             card.addClass("grex-nexus-component-card");
             
             const cardHeader = card.createDiv();
-            setCssStyles(cardHeader, { display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" });
+            applyStyles(cardHeader, { display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" });
             
             const iconSpan = cardHeader.createDiv();
             setIcon(iconSpan, comp.manifest.icon || "package");
@@ -631,13 +634,13 @@ export default class GrexNexusPlugin extends Plugin {
 
         if (!targetComponent) {
             const errDiv = el.createDiv({ text: `GREX Component not found: "${trimmed}"` });
-            setCssStyles(errDiv, { padding: "10px", color: "var(--text-error)" });
+            applyStyles(errDiv, { padding: "10px", color: "var(--text-error)" });
             return;
         }
 
         const container = el.createDiv();
         container.addClass("grex-nexus-view-container");
-        setCssStyles(container, { minHeight: "350px", position: "relative" });
+        applyStyles(container, { minHeight: "350px", position: "relative" });
 
         void loadComponentBundle(container, targetComponent, this.app, this);
     }
@@ -707,20 +710,20 @@ class GrexNexusSettingTab extends PluginSettingTab {
 
         if (uniqueComponents.length === 0) {
             const noComps = containerEl.createEl('p', { text: 'No native components installed.' });
-            setCssStyles(noComps, { color: 'var(--text-muted)', padding: '20px', textAlign: 'center' });
+            applyStyles(noComps, { color: 'var(--text-muted)', padding: '20px', textAlign: 'center' });
         } else {
             const libraryContainer = containerEl.createDiv();
-            setCssStyles(libraryContainer, { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px', padding: '10px 0' });
+            applyStyles(libraryContainer, { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px', padding: '10px 0' });
 
             uniqueComponents.forEach(comp => {
                 const card = libraryContainer.createDiv();
                 card.addClass("grex-nexus-component-card");
 
                 const header = card.createDiv();
-                setCssStyles(header, { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' });
+                applyStyles(header, { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' });
                 
                 const iconBox = header.createDiv();
-                setCssStyles(iconBox, { width: '36px', height: '36px', borderRadius: '8px', background: 'var(--background-modifier-form-field)', display: 'flex', alignItems: 'center', justifyContent: 'center' });
+                applyStyles(iconBox, { width: '36px', height: '36px', borderRadius: '8px', background: 'var(--background-modifier-form-field)', display: 'flex', alignItems: 'center', justifyContent: 'center' });
                 setIcon(iconBox, comp.manifest.icon || 'package');
 
                 const titleBox = header.createDiv();
@@ -732,7 +735,7 @@ class GrexNexusSettingTab extends PluginSettingTab {
                 const requestedPerms: string[] = comp.manifest.permissions || [];
                 if (requestedPerms.length > 0) {
                     const privacyBox = card.createDiv();
-                    setCssStyles(privacyBox, { marginTop: '12px', borderTop: '1px solid var(--background-modifier-border)', paddingTop: '12px' });
+                    applyStyles(privacyBox, { marginTop: '12px', borderTop: '1px solid var(--background-modifier-border)', paddingTop: '12px' });
                     privacyBox.createDiv({ text: 'Privacy & Security' });
                     
                     const perms = this.plugin.settings.componentPermissions[comp.manifest.name] || {};
@@ -760,7 +763,7 @@ class GrexNexusSettingTab extends PluginSettingTab {
                 }
 
                 const footer = card.createDiv();
-                setCssStyles(footer, { display: 'flex', justifyContent: 'flex-end', marginTop: '16px', gap: '8px' });
+                applyStyles(footer, { display: 'flex', justifyContent: 'flex-end', marginTop: '16px', gap: '8px' });
 
                 new ButtonComponent(footer)
                     .setButtonText("Purge")
