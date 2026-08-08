@@ -318,33 +318,16 @@ async function loadComponentBundle(container: HTMLElement, componentData: Compon
     }
     const bundleUrl = `${app.vault.getResourcePath(bundleFile)}?t=${Date.now()}`;
 
+    const importUrl = bundleUrl;
+
     interface ComponentModule {
         mount_app?: (container: HTMLElement, props: Record<string, unknown>) => (() => void) | void;
         default?: (container: HTMLElement, props: Record<string, unknown>) => (() => void) | void;
     }
 
-    const loadModule = (url: string): Promise<ComponentModule> => {
-        const script = activeDocument.createElement('script');
-        script.type = 'module';
-        return new Promise((resolve, reject) => {
-            const callbackName = `__grex_cb_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-            const winCallback = window as unknown as Record<string, (mod: ComponentModule) => void>;
-            winCallback[callbackName] = (mod: ComponentModule) => {
-                delete winCallback[callbackName];
-                script.remove();
-                resolve(mod);
-            };
-            script.textContent = `import * as mod from '${url}'; window['${callbackName}'](mod);`;
-            script.onerror = () => {
-                delete winCallback[callbackName];
-                script.remove();
-                reject(new Error("Failed to load component ESM bundle"));
-            };
-            activeDocument.head.appendChild(script);
-        });
-    };
-
-    const module = await loadModule(bundleUrl);
+    // eslint-disable-next-line @typescript-eslint/no-implied-eval -- Required for dynamic ESM bundle loading inside Obsidian tab host
+    const dynamicImport = new Function('url', 'return import(url);') as (url: string) => Promise<ComponentModule>;
+    const module = await dynamicImport(importUrl);
     const mountFn = module.mount_app || module.default;
 
     if (typeof mountFn !== 'function') {
