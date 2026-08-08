@@ -1,6 +1,6 @@
 {
 	"id": "grex-nexus",
-	"name": "GREX Nexus",
+	"name": "GREX NEXUS",
 	"version": "1.0.1",
 	"minAppVersion": "1.4.0",
 	"description": "Component host and micro-application launcher for modular workspace widgets and tools.",
