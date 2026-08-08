@@ -369,36 +369,46 @@ class GrexComponentView extends ItemView {
     }
 
     setComponentData(data: ComponentData) {
+        console.log('[GrexNexus] 📦 setComponentData:', data.manifest.name, data.folder.path);
         this.componentData = data;
     }
 
     getState(): Record<string, unknown> {
-        return {
+        const state = {
             componentPath: this.componentData ? this.componentData.folder.path : ""
         };
+        console.log('[GrexNexus] 💾 getState called ->', state);
+        return state;
     }
 
     async setState(state: Record<string, unknown>, result: ViewStateResult): Promise<void> {
+        console.log('[GrexNexus] 🔄 setState invoked with state:', state);
         const compPath = (state?.componentPath as string) || "";
         if (compPath) {
             if (!this.plugin.manifestCache.has(compPath)) {
+                console.log('[GrexNexus] 🔍 Path not in cache, refreshing cache for:', compPath);
                 await this.plugin.refreshCache();
             }
             const found = this.plugin.manifestCache.get(compPath);
             if (found) {
+                console.log('[GrexNexus] ✅ Restored componentData from state:', found.manifest.name);
                 this.componentData = found;
                 await this.onOpen();
+            } else {
+                console.warn('[GrexNexus] ⚠️ Component path not found in cache:', compPath);
             }
         }
         await super.setState(state, result);
     }
 
     async onOpen() {
+        console.log('[GrexNexus] 🚀 GrexComponentView onOpen triggered. Current component:', this.componentData?.manifest.name);
         const container = this.contentEl;
         container.empty();
         container.addClass("grex-nexus-view-container");
 
         if (!this.componentData) {
+            console.log('[GrexNexus] ℹ️ onOpen: No component loaded yet.');
             const emptyEl = container.createDiv({ text: "No component loaded." });
             applyStyles(emptyEl, { padding: "20px", color: "var(--text-muted)" });
             return;
@@ -406,11 +416,15 @@ class GrexComponentView extends ItemView {
 
         try {
             if (this.unmountFn) {
+                console.log('[GrexNexus] 🧹 Unmounting previous instance.');
                 this.unmountFn();
                 this.unmountFn = null;
             }
+            console.log('[GrexNexus] ⚡ Loading bundle for:', this.componentData.manifest.name);
             this.unmountFn = await loadComponentBundle(container, this.componentData, this.app, this.plugin);
+            console.log('[GrexNexus] 🎉 Successfully mounted component:', this.componentData.manifest.name);
         } catch (err: unknown) {
+            console.error('[GrexNexus] ❌ Component Load Error:', err);
             container.empty();
             const errBox = container.createDiv();
             applyStyles(errBox, { padding: "20px", color: "var(--text-error)" });
@@ -420,6 +434,7 @@ class GrexComponentView extends ItemView {
     }
 
     async onClose() {
+        console.log('[GrexNexus] 🛑 GrexComponentView onClose triggered for:', this.componentData?.manifest.name);
         if (this.unmountFn) {
             this.unmountFn();
             this.unmountFn = null;
