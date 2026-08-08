@@ -1,0 +1,30 @@
+/* GREX Nexus Obsidian Plugin Styles */
+
+.grex-nexus-ribbon-class {
+  color: var(--text-accent);
+}
+
+.grex-nexus-view-container {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  background-color: var(--background-primary);
+  color: var(--text-normal);
+}
+
+.grex-nexus-modal {
+  max-width: 600px;
+  border-radius: 12px;
+  background-color: var(--background-primary-alt);
+  border: 1px solid var(--background-modifier-border);
+}
+
+.grex-nexus-component-card {
+  padding: 12px;
+  border-radius: 8px;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  margin-bottom: 8px;
+}

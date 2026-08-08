@@ -1,0 +1,46 @@
+{
+  "name": "grex-nexus",
+  "version": "1.0.0",
+  "description": "Component host and micro-app launcher engine for Obsidian",
+  "main": "main.js",
+  "scripts": {
+    "build": "node esbuild.config.mjs production",
+    "dev": "node esbuild.config.mjs",
+    "lint": "eslint main.ts"
+  },
+  "keywords": [
+    "obsidian",
+    "obsidian-plugin",
+    "micro-apps",
+    "datacore",
+    "grex"
+  ],
+  "author": "Beto Group",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/beto-group/GrexNexusObsidian.git"
+  },
+  "bugs": {
+    "url": "https://github.com/beto-group/GrexNexusObsidian/issues"
+  },
+  "homepage": "https://github.com/beto-group/GrexNexusObsidian#readme",
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.8",
+    "@types/node": "^25.9.3",
+    "@typescript-eslint/parser": "^8.61.0",
+    "builtin-modules": "^5.2.0",
+    "esbuild": "^0.28.1",
+    "eslint": "^9.39.4",
+    "eslint-plugin-obsidianmd": "^0.3.0",
+    "tslib": "^2.8.1",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.17",
+    "obsidian": "^1.13.1",
+    "preact": "^10.29.2",
+    "y-websocket": "^3.0.0",
+    "yjs": "^13.6.31"
+  }
+}
