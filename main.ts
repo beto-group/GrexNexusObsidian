@@ -13,6 +13,7 @@ import {
     Setting,
     ButtonComponent,
     ViewStateResult,
+    MarkdownView,
     setIcon,
     requestUrl
 } from 'obsidian';
@@ -217,6 +218,22 @@ async function loadComponentBundle(container: HTMLElement, componentData: Compon
             }
         },
         workspace: {
+            insertIntoActiveNote: async (text: string) => {
+                const mdView = app.workspace.getActiveViewOfType(MarkdownView);
+                if (mdView && mdView.editor) {
+                    mdView.editor.replaceSelection(`\n${text}\n`);
+                    new Notice("Inserted PDF Callout into active note!");
+                    return true;
+                }
+                const activeFile = app.workspace.getActiveFile();
+                if (activeFile instanceof TFile) {
+                    const existing = await app.vault.read(activeFile);
+                    await app.vault.modify(activeFile, `${existing}\n\n${text}\n`);
+                    new Notice(`Appended PDF Callout to ${activeFile.basename}!`);
+                    return true;
+                }
+                return false;
+            },
             popoutLeaf: () => {
                 const targetLeaf = app.workspace.getLeavesOfType(VIEW_TYPE_GREX).find(l => {
                     return l.view instanceof GrexComponentView && l.view.componentData?.manifest.name === componentData.manifest.name;
