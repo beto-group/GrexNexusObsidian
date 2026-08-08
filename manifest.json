@@ -3,7 +3,7 @@
 	"name": "GREX Nexus",
 	"version": "1.0.0",
 	"minAppVersion": "1.4.0",
-	"description": "Component host and micro-app launcher engine. Dynamically renders modular ESM/WASM bundles inside native Obsidian tabs.",
+	"description": "Component host and micro-app launcher engine. Dynamically renders modular ESM/WASM bundles inside native workspace tabs.",
 	"author": "Beto Group",
 	"authorUrl": "https://github.com/beto-group",
 	"isDesktopOnly": false
