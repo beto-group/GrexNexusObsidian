@@ -312,24 +312,40 @@ async function loadComponentBundle(container: HTMLElement, componentData: Compon
     const winExtended = window as unknown as { grexPlatformAPI?: typeof platformAPI };
     winExtended.grexPlatformAPI = platformAPI;
 
-    const bundleContent = await app.vault.adapter.read(entrypointPath);
+    const bundleFile = app.vault.getAbstractFileByPath(entrypointPath);
+    if (!(bundleFile instanceof TFile)) {
+        throw new Error(`Entrypoint not found: ${entrypointPath}`);
+    }
+    const bundleUrl = `${app.vault.getResourcePath(bundleFile)}?t=${Date.now()}`;
 
     interface ComponentModule {
         mount_app?: (container: HTMLElement, props: Record<string, unknown>) => (() => void) | void;
         default?: (container: HTMLElement, props: Record<string, unknown>) => (() => void) | void;
     }
 
-    const scriptEl = activeDocument.createElement('script');
-    scriptEl.textContent = `(function() {
-        const exports = {};
-        ${bundleContent}
-        window.__grex_last_module__ = exports.mount_app ? exports : (typeof mount_app !== 'undefined' ? { mount_app } : exports);
-    })();`;
-    activeDocument.head.appendChild(scriptEl);
-    scriptEl.remove();
+    const loadModule = (url: string): Promise<ComponentModule> => {
+        const script = activeDocument.createElement('script');
+        script.type = 'module';
+        return new Promise((resolve, reject) => {
+            const callbackName = `__grex_cb_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+            const winCallback = window as unknown as Record<string, (mod: ComponentModule) => void>;
+            winCallback[callbackName] = (mod: ComponentModule) => {
+                delete winCallback[callbackName];
+                script.remove();
+                resolve(mod);
+            };
+            script.textContent = `import * as mod from '${url}'; window['${callbackName}'](mod);`;
+            script.onerror = () => {
+                delete winCallback[callbackName];
+                script.remove();
+                reject(new Error("Failed to load component ESM bundle"));
+            };
+            activeDocument.head.appendChild(script);
+        });
+    };
 
-    const winExtendedModule = window as unknown as { __grex_last_module__?: ComponentModule };
-    const mountFn = winExtendedModule.__grex_last_module__?.mount_app || winExtendedModule.__grex_last_module__?.default;
+    const module = await loadModule(bundleUrl);
+    const mountFn = module.mount_app || module.default;
 
     if (typeof mountFn !== 'function') {
         throw new Error(`Bundle at ${entrypointPath} does not export a mount_app function.`);
