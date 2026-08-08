@@ -17,7 +17,6 @@ import {
 } from 'obsidian';
 import * as preact from 'preact';
 import AdmZip from 'adm-zip';
-import * as fs from 'fs';
 
 const VIEW_TYPE_GREX = "grex-component-view";
 const VIEW_TYPE_GREX_DASHBOARD = "grex-dashboard-view";
@@ -377,13 +376,13 @@ async function loadComponentBundle(container: HTMLElement, componentData: Compon
             }
         },
         os: {
-            write: async (absolutePath: string, data: string) => {
+            write: async (filePath: string, data: string) => {
                 checkPermission('fs');
-                await fs.promises.writeFile(absolutePath, data, 'utf-8');
+                await app.vault.adapter.write(filePath, data);
             },
             rename: async (oldPath: string, newPath: string) => {
                 checkPermission('fs');
-                await fs.promises.rename(oldPath, newPath);
+                await app.vault.adapter.rename(oldPath, newPath);
             }
         },
         keychain: {
@@ -1599,34 +1598,27 @@ export default class GrexNexusPlugin extends Plugin {
     async refreshCache() {
         this.manifestCache.clear();
         
-        // Scan only folders to massively speed up iteration
+        // Scan folders using Obsidian native vault adapter
         const allFolders = this.app.vault.getAllLoadedFiles().filter(f => f instanceof TFolder);
         
-        // Ensure physical components directory subfolders are included in folder scan list
-        try {
-            const fs = require('fs');
-            const path = require('path');
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const basePath = (this.app.vault.adapter as any).getBasePath ? (this.app.vault.adapter as any).getBasePath() : process.cwd();
-            const compsDir = path.join(basePath, 'components');
-            const grexCompsDir = path.join(basePath, 'GREX.datacore', 'components');
-
-            [compsDir, grexCompsDir].forEach(targetDir => {
-                if (fs.existsSync(targetDir)) {
-                    const entries = fs.readdirSync(targetDir, { withFileTypes: true });
-                    for (const entry of entries) {
-                        if (entry.isDirectory() && !entry.name.startsWith('.')) {
-                            const relPath = path.relative(basePath, path.join(targetDir, entry.name));
-                            if (!allFolders.some(f => f.path === relPath)) {
-                                const folderObj = this.app.vault.getAbstractFileByPath(relPath) || { path: relPath, name: entry.name };
+        // Include component directories via native vault adapter list
+        for (const compsDir of ['components', 'GREX.datacore/components']) {
+            try {
+                if (await this.app.vault.adapter.exists(compsDir)) {
+                    const listResult = await this.app.vault.adapter.list(compsDir);
+                    for (const folderPath of listResult.folders) {
+                        const folderName = folderPath.split('/').pop() || '';
+                        if (!folderName.startsWith('.')) {
+                            if (!allFolders.some(f => f.path === folderPath)) {
+                                const folderObj = this.app.vault.getAbstractFileByPath(folderPath) || { path: folderPath, name: folderName };
                                 allFolders.push(folderObj as TFolder);
                             }
                         }
                     }
                 }
-            });
-        } catch (e) {
-            console.warn('[GrexNexus] Physical component folder scan warning:', e);
+            } catch (e) {
+                console.warn('[GrexNexus] Component directory scan warning:', e);
+            }
         }
         
         for (const folder of allFolders) {
@@ -1634,21 +1626,21 @@ export default class GrexNexusPlugin extends Plugin {
                 continue;
             }
 
-            const fs = require('fs');
-            const path = require('path');
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const basePath = (this.app.vault.adapter as any).getBasePath ? (this.app.vault.adapter as any).getBasePath() : process.cwd();
-            const folderAbsPath = path.join(basePath, folder.path);
-            const fullGrexJsonPath = path.join(folderAbsPath, 'grex.json');
-            const fullManifestJsonPath = path.join(folderAbsPath, 'manifest.json');
+            const grexJsonPath = `${folder.path}/grex.json`;
+            const manifestJsonPath = `${folder.path}/manifest.json`;
             
             let manifest: GrexManifest | null = null;
 
-            // 1. Check for grex.json or manifest.json using Node native fs
-            const targetJsonPath = fs.existsSync(fullGrexJsonPath) ? fullGrexJsonPath : fs.existsSync(fullManifestJsonPath) ? fullManifestJsonPath : null;
+            // 1. Check for grex.json or manifest.json using native vault adapter
+            const targetJsonPath = (await this.app.vault.adapter.exists(grexJsonPath)) 
+                ? grexJsonPath 
+                : (await this.app.vault.adapter.exists(manifestJsonPath)) 
+                    ? manifestJsonPath 
+                    : null;
+
             if (targetJsonPath) {
                 try {
-                    const content = fs.readFileSync(targetJsonPath, 'utf8');
+                    const content = await this.app.vault.adapter.read(targetJsonPath);
                     manifest = JSON.parse(content) as GrexManifest;
                     if (!manifest.entrypoint && (manifest as unknown as Record<string, string>).entry) {
                         manifest.entrypoint = (manifest as unknown as Record<string, string>).entry;
@@ -1951,24 +1943,19 @@ class GrexNexusSettingTab extends PluginSettingTab {
                 // Flawed extraction: Source code zipballs from GitHub include a top-level hash folder
                 const entries = zip.getEntries();
                 if (entries.length === 0) throw new Error("Downloaded zip is mathematically empty.");
-                const rootFolderName = entries[0].entryName.split('/')[0] + '/';
-                
-                const tempPath = `${basePath}/.temp_extraction_${Date.now()}`;
-                zip.extractAllTo(tempPath, true);
-                
-                 
-                const fs = require('fs');
-                const tempRoot = `${tempPath}/${rootFolderName}`;
-                
-                 
-                if (fs.existsSync(targetPath)) {
-                     
-                    fs.rmSync(targetPath, { recursive: true, force: true });
+                for (const entry of entries) {
+                    if (!entry.isDirectory) {
+                        const relativeEntryPath = entry.entryName.replace(rootFolderName, '');
+                        if (relativeEntryPath) {
+                            const fullTargetPath = `${targetRelPath}/${relativeEntryPath}`;
+                            const folderOnly = fullTargetPath.substring(0, fullTargetPath.lastIndexOf('/'));
+                            if (folderOnly && !(await this.app.vault.adapter.exists(folderOnly))) {
+                                await this.app.vault.adapter.mkdir(folderOnly);
+                            }
+                            await this.app.vault.adapter.write(fullTargetPath, entry.getData().toString('utf8'));
+                        }
+                    }
                 }
-                 
-                fs.renameSync(tempRoot, targetPath);
-                 
-                fs.rmSync(tempPath, { recursive: true, force: true });
             }
             
             // Wait for Obsidian's asynchronous file watcher to mathematically index the raw Node.js fs writes
