@@ -12,6 +12,7 @@ import {
     PluginSettingTab,
     Setting,
     ButtonComponent,
+    ViewStateResult,
     setIcon,
     requestUrl
 } from 'obsidian';
@@ -371,6 +372,27 @@ class GrexComponentView extends ItemView {
         this.componentData = data;
     }
 
+    getState(): Record<string, unknown> {
+        return {
+            componentPath: this.componentData ? this.componentData.folder.path : ""
+        };
+    }
+
+    async setState(state: Record<string, unknown>, result: ViewStateResult): Promise<void> {
+        const compPath = (state?.componentPath as string) || "";
+        if (compPath) {
+            if (!this.plugin.manifestCache.has(compPath)) {
+                await this.plugin.refreshCache();
+            }
+            const found = this.plugin.manifestCache.get(compPath);
+            if (found) {
+                this.componentData = found;
+                await this.onOpen();
+            }
+        }
+        await super.setState(state, result);
+    }
+
     async onOpen() {
         const container = this.contentEl;
         container.empty();
@@ -581,22 +603,25 @@ export default class GrexNexusPlugin extends Plugin {
 
     async activateComponentView(componentData: ComponentData) {
         const { workspace } = this.app;
-        let leaf: WorkspaceLeaf | null = null;
-        const leaves = workspace.getLeavesOfType(VIEW_TYPE_GREX);
+        let leaf = workspace.getLeavesOfType(VIEW_TYPE_GREX).find(l => {
+            return l.view instanceof GrexComponentView && l.view.componentData?.folder.path === componentData.folder.path;
+        });
 
-        if (leaves.length > 0) {
-            leaf = leaves[0];
-        } else {
+        if (!leaf) {
             leaf = workspace.getLeaf('tab');
-            if (leaf) {
-                await leaf.setViewState({ type: VIEW_TYPE_GREX, active: true });
-            }
         }
 
-        if (leaf && leaf.view instanceof GrexComponentView) {
-            leaf.view.setComponentData(componentData);
-            await leaf.view.onOpen();
-            workspace.setActiveLeaf(leaf, { focus: true });
+        if (leaf) {
+            await leaf.setViewState({
+                type: VIEW_TYPE_GREX,
+                active: true,
+                state: { componentPath: componentData.folder.path }
+            });
+            if (leaf.view instanceof GrexComponentView) {
+                leaf.view.setComponentData(componentData);
+                await leaf.view.onOpen();
+                workspace.setActiveLeaf(leaf, { focus: true });
+            }
         }
     }
 
