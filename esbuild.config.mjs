@@ -19,12 +19,14 @@ const copyAssetsPlugin = {
 	name: 'copy-assets',
 	setup(build) {
 		build.onEnd(() => {
-			fs.copyFileSync("manifest.json", `${outdir}/manifest.json`);
-			if (fs.existsSync("styles.css")) {
-				fs.copyFileSync("styles.css", `${outdir}/styles.css`);
-			}
-			if (fs.existsSync(".hotreload")) {
-				fs.copyFileSync(".hotreload", `${outdir}/.hotreload`);
+			if (fs.existsSync(`${outdir}`)) {
+				fs.copyFileSync("manifest.json", `${outdir}/manifest.json`);
+				if (fs.existsSync("styles.css")) {
+					fs.copyFileSync("styles.css", `${outdir}/styles.css`);
+				}
+				if (fs.existsSync(`${outdir}/main.js`)) {
+					fs.copyFileSync(`${outdir}/main.js`, "main.js");
+				}
 			}
 		});
 	},
