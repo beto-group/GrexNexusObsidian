@@ -29,12 +29,16 @@ const VIEW_TYPE_GREX_DASHBOARD = "grex-dashboard-view";
 interface GrexNexusSettings {
     githubToken: string;
     targetFolder: string;
+    sidecarToken: string;
+    sidecarUrl: string;
     componentPermissions: Record<string, Record<string, boolean>>;
 }
 
 const DEFAULT_SETTINGS: GrexNexusSettings = {
     githubToken: '',
     targetFolder: 'GrexNexus/components/',
+    sidecarToken: '',
+    sidecarUrl: 'http://localhost:7777',
     componentPermissions: {}
 };
 
@@ -386,46 +390,36 @@ class GrexComponentView extends ItemView {
     }
 
     setComponentData(data: ComponentData) {
-        console.log('[GrexNexus] 📦 setComponentData:', data.manifest.name, data.folder.path);
         this.componentData = data;
     }
 
     getState(): Record<string, unknown> {
-        const state = {
+        return {
             componentPath: this.componentData ? this.componentData.folder.path : ""
         };
-        console.log('[GrexNexus] 💾 getState called ->', state);
-        return state;
     }
 
     async setState(state: Record<string, unknown>, result: ViewStateResult): Promise<void> {
-        console.log('[GrexNexus] 🔄 setState invoked with state:', state);
         const compPath = (state?.componentPath as string) || "";
         if (compPath) {
             if (!this.plugin.manifestCache.has(compPath)) {
-                console.log('[GrexNexus] 🔍 Path not in cache, refreshing cache for:', compPath);
                 await this.plugin.refreshCache();
             }
             const found = this.plugin.manifestCache.get(compPath);
             if (found) {
-                console.log('[GrexNexus] ✅ Restored componentData from state:', found.manifest.name);
                 this.componentData = found;
                 await this.onOpen();
-            } else {
-                console.warn('[GrexNexus] ⚠️ Component path not found in cache:', compPath);
             }
         }
         await super.setState(state, result);
     }
 
     async onOpen() {
-        console.log('[GrexNexus] 🚀 GrexComponentView onOpen triggered. Current component:', this.componentData?.manifest.name);
         const container = this.contentEl;
         container.empty();
         container.addClass("grex-nexus-view-container");
 
         if (!this.componentData) {
-            console.log('[GrexNexus] ℹ️ onOpen: No component loaded yet.');
             const emptyEl = container.createDiv({ text: "No component loaded." });
             applyStyles(emptyEl, { padding: "20px", color: "var(--text-muted)" });
             return;
@@ -433,13 +427,10 @@ class GrexComponentView extends ItemView {
 
         try {
             if (this.unmountFn) {
-                console.log('[GrexNexus] 🧹 Unmounting previous instance.');
                 this.unmountFn();
                 this.unmountFn = null;
             }
-            console.log('[GrexNexus] ⚡ Loading bundle for:', this.componentData.manifest.name);
             this.unmountFn = await loadComponentBundle(container, this.componentData, this.app, this.plugin);
-            console.log('[GrexNexus] 🎉 Successfully mounted component:', this.componentData.manifest.name);
         } catch (err: unknown) {
             console.error('[GrexNexus] ❌ Component Load Error:', err);
             container.empty();
@@ -451,7 +442,6 @@ class GrexComponentView extends ItemView {
     }
 
     async onClose() {
-        console.log('[GrexNexus] 🛑 GrexComponentView onClose triggered for:', this.componentData?.manifest.name);
         if (this.unmountFn) {
             this.unmountFn();
             this.unmountFn = null;
@@ -755,6 +745,27 @@ class GrexNexusSettingTab extends PluginSettingTab {
                 .setValue(this.plugin.settings.targetFolder)
                 .onChange(async (value) => {
                     this.plugin.settings.targetFolder = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName("Hermes Sidecar Authentication Token")
+            .setDesc("Shared Bearer token for authenticating host calls with Hermes Sidecar IPC daemon.")
+            .addText(text => text
+                .setPlaceholder("Enter sidecar token...")
+                .setValue(this.plugin.settings.sidecarToken)
+                .onChange(async (value) => {
+                    this.plugin.settings.sidecarToken = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName("Hermes Sidecar URL")
+            .setDesc("Base URL for Hermes Sidecar IPC daemon (default: http://localhost:7777).")
+            .addText(text => text
+                .setValue(this.plugin.settings.sidecarUrl)
+                .onChange(async (value) => {
+                    this.plugin.settings.sidecarUrl = value;
                     await this.plugin.saveSettings();
                 }));
 
